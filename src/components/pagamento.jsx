@@ -44,35 +44,35 @@ function Pagamento({ open, setOpen, data, titulo, submit }) {
   });
 
   //finaliza processo de pindurar
-  async function onSubmitPindurar(formData) {
-    const pagamento = {
-      valor_total: formData.valor,
-      observacao: formData.observacao,
-    };
-    if (titulo === 'Fornecedores') {
-      (pagamento.compradorId = userID),
-        (pagamento.vendedorId = formData.fornecedor),
-        (pagamento.aceite_consumidor = 1);
-      pagamento.aceite_empreendedor = 0;
-    }
-    if (titulo === 'Clientes') {
-      (pagamento.compradorId = formData.fornecedor),
-        (pagamento.vendedorId = userID),
-        (pagamento.aceite_consumidor = 0);
-      pagamento.aceite_empreendedor = 1;
-    }
-    console.log(pagamento);
+  // async function onSubmitPindurar(formData) {
+  //   const pagamento = {
+  //     valor_total: formData.valor,
+  //     observacao: formData.observacao,
+  //   };
+  //   if (titulo === 'Fornecedores') {
+  //     (pagamento.compradorId = userID),
+  //       (pagamento.vendedorId = formData.fornecedor),
+  //       (pagamento.aceite_consumidor = 1);
+  //     pagamento.aceite_empreendedor = 0;
+  //   }
+  //   if (titulo === 'Clientes') {
+  //     (pagamento.compradorId = formData.fornecedor),
+  //       (pagamento.vendedorId = userID),
+  //       (pagamento.aceite_consumidor = 0);
+  //     pagamento.aceite_empreendedor = 1;
+  //   }
+  //   console.log(pagamento);
 
-    const data = await api.post(`/pindura`, pagamento).catch(function (err) {
-      // console.log(err);
-      alert(err.response.data.error);
-    });
-    reset();
+  //   const data = await api.post(`/pindura`, pagamento).catch(function (err) {
+  //     // console.log(err);
+  //     alert(err.response.data.error);
+  //   });
+  //   reset();
 
-    if (data) {
-      alert('Pagamento adicionado!');
-    }
-  }
+  //   if (data) {
+  //     alert('Pagamento adicionado!');
+  //   }
+  // }
   // recebe função sbmit com PROPS do componente
   async function onSubmit(formData) {
     submit(formData);

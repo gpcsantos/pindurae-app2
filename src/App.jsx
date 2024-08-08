@@ -9,6 +9,7 @@ import Produto from './pages/produto';
 import ProdutoNovo from './pages/produto_novo';
 import Pindura from './pages/pindura';
 import Clientes from './pages/clientes';
+import { Loading } from './components/loading';
 
 import NotFound from './pages/not_found';
 import { AuthContextProvider } from './context/auth';
@@ -19,7 +20,7 @@ const AuthLayout = () => {
   // console.log(`loading AUTH: ${loading}`);
 
   if (loading) {
-    return <h1>Loadiiinnnnnggg......</h1>;
+    return <Loading />;
   }
   if (authenticated) {
     // const isAuthenticated = Parse.User.current().getSessionToken();

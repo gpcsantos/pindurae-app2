@@ -9,7 +9,7 @@ import { Footer } from '../components/footer';
 import { Pagamento } from '../components/pagamento';
 import { Loading } from '../components/loading';
 import { Error } from '../components/error';
-import { par } from '../utils/utils';
+import { par, formatCurrency } from '../utils/utils';
 import { Vender } from '../components/vender';
 
 function Clientes() {
@@ -23,9 +23,10 @@ function Clientes() {
   const [updateProduct, setUpdateProduct] = useState({});
   const navigate = useNavigate();
 
-  const [open, setOpen] = useState(false);
+  const [openListaClientes, setOpenListaClientes] = useState(false);
 
-  const handleOnClose = () => setOpen(false);
+  const handleOnCloseListaClientes = () =>
+    setOpenListaClientes(!openListaClientes);
 
   // ********************************
   //        Modais
@@ -90,14 +91,13 @@ function Clientes() {
       const pindura = await api
         .get(`/pindura/supplier/${userID}`)
         .catch(function (err) {
-          // console.log(err);
           alert(err.response.data.error);
         });
-
       const arr = [];
       pindura.data.map(obj => {
         let index = -1;
-
+        const id = obj.compradorId;
+        let partialSum = 0;
         for (var i = 0, len = arr.length; i < len; i++) {
           if (arr[i].id === obj.comprador.id) {
             index = i;
@@ -105,10 +105,15 @@ function Clientes() {
           }
         }
         if (index === -1) {
+          pindura.data.map(({ compradorId, valor_total }) => {
+            if (id === compradorId) {
+              partialSum += parseFloat(valor_total);
+            }
+          });
+          obj.comprador.total = partialSum;
           arr.push(obj.comprador);
         }
       });
-
       setClientes(arr);
     } catch (error) {
       console.log(error);
@@ -118,8 +123,6 @@ function Clientes() {
 
   // submit para PAGAMENTO ( PROP )
   async function onSubmitPindurar(formData) {
-    console.log(formData);
-
     const pagamento = {
       compradorId: formData.select,
       vendedorId: userID,
@@ -141,10 +144,11 @@ function Clientes() {
 
   useEffect(() => {
     getAprovar();
+    getClientes();
 
     setAprovado(true);
     setLoading(false);
-  }, [aprovado]);
+  }, [aprovado, openPagamento, openVender]);
 
   let mainJsx = <Loading />;
 
@@ -162,8 +166,17 @@ function Clientes() {
           >
             Vender
           </button>
-          <button className='w-32 lg:w-36 border-2 text-center p-2 cursor-pointer m-3 md:m-0'>
+          <button
+            className='w-32 lg:w-36 border-2 text-center p-2 cursor-pointer m-3 md:m-0'
+            onClick={() => handleOnCloseListaClientes()}
+          >
             Lista de Clientes
+          </button>
+          <button
+            className='w-32 lg:w-36 border-2 text-center p-2 cursor-pointer m-3 md:m-0'
+            onClick={() => console.log('extrato')}
+          >
+            Extrato
           </button>
           <button
             className='w-32 lg:w-36  border-2 text-center p-2 cursor-pointer m-3 md:m-0'
@@ -244,6 +257,48 @@ function Clientes() {
           </div>
         )}
         {/* FIM LISTA DE APROVAÇÃO RÁPIDA */}
+
+        {/* Lista de Clientes */}
+        {openListaClientes && clientes.length !== 0 && (
+          <>
+            <div className=' flex flex-col m-4'>
+              <div className='text-center p-4 bg-[#918639] font-bold text-lg tracking-[4px]'>
+                Lista de Clientes
+              </div>
+              <div className='flex flex-col'>
+                <>
+                  <div className='flex flex-col'>
+                    <div className={`flex bg-[#beb56c] items-center  `}>
+                      <div className='flex-1 flex justify-between items-center py-2 px-2 lg:px-5   '>
+                        <div className='flex-1 '>Nome</div>
+
+                        <div className='w-40 text-center'>Saldo</div>
+                      </div>
+                    </div>
+                  </div>
+                  {clientes.map((cliente, index) => {
+                    let cn;
+                    par(index) ? (cn = 'bg-[#beb56c]') : (cn = '');
+                    return (
+                      <div
+                        className={`flex ${cn} items-center  hover:font-semibold hover:text-orange-900 hover:bg-opacity-80`}
+                        key={cliente.id}
+                      >
+                        <div className='flex-1 flex justify-between items-center py-2 px-2 lg:px-5  '>
+                          <div className='flex-1 md:w-40'>{cliente.nome}</div>
+                          <div className='w-40 text-center'>
+                            {`R$ ${formatCurrency(cliente.total)}`}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              </div>
+            </div>
+          </>
+        )}
+        {/* Fim lista de clientes */}
 
         {/* MODAL PINDURAR */}
         <Vender open={openVender} setOpen={handleOnCloseVender} />

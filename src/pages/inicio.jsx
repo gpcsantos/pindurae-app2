@@ -1,8 +1,6 @@
 import { useAuth } from '../hooks/useAuth';
 import { useState, useEffect } from 'react';
 
-import ReactLoading from 'react-loading';
-
 import { api } from '../services/api';
 import { Header } from '../components/header';
 import { Main } from '../components/main';

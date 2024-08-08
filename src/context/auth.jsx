@@ -19,15 +19,19 @@ export const AuthContextProvider = ({ children }) => {
       api.defaults.headers.common['x-access-token'] = JSON.parse(token);
       setAuthenticated(true);
       (async function () {
-        const { data } = await api.get('/authtoken').catch(e => {
+        const result = await api.get('/authtoken').catch(e => {
           if (e.response.status === 500) {
-            alert('Seu token venceu!');
-            handleSignOut();
+            alert(`${e.response.data.msg}: Realize novo login!`);
           }
           console.log(e);
+          handleSignOut();
+          // setLoading(true);
+          navigate('/login');
         });
 
-        localStorage.setItem('empreendedor', data.empreendedor);
+        if (result) {
+          localStorage.setItem('empreendedor', result.data.empreendedor);
+        }
       })();
     }
     setLoading(false);
@@ -61,6 +65,7 @@ export const AuthContextProvider = ({ children }) => {
     }
   };
   const handleSignOut = () => {
+    console.log('handleSignOut: PASSOU');
     localStorage.removeItem('token');
     localStorage.removeItem('empreendedor');
     localStorage.removeItem('id');
