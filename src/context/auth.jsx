@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { jwtDecode } from 'jwt-decode';
 
@@ -12,28 +12,46 @@ export const AuthContextProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  async function validaToken(token) {
+    try {
+      const result = await api.get('/authtoken');
+
+      if (result.data) {
+        localStorage.setItem('empreendedor', result.data.empreendedor);
+      }
+
+      return result;
+    } catch (err) {
+      return err;
+    }
+  }
+
   useEffect(() => {
     const token = localStorage.getItem('token');
 
-    if (token) {
-      api.defaults.headers.common['x-access-token'] = JSON.parse(token);
-      setAuthenticated(true);
-      (async function () {
-        const result = await api.get('/authtoken').catch(e => {
-          if (e.response.status === 500) {
-            alert(`${e.response.data.msg}: Realize novo login!`);
-          }
-          console.log(e);
-          handleSignOut();
-          // setLoading(true);
-          navigate('/login');
-        });
+    (async function () {
+      try {
+        if (token) {
+          setAuthenticated(true);
+          api.defaults.headers.common['x-access-token'] = JSON.parse(token);
+          const result = await validaToken(token);
 
-        if (result) {
-          localStorage.setItem('empreendedor', result.data.empreendedor);
+          if (result.status !== 200) {
+            throw result.response.data.msg;
+          }
+          const decoded = jwtDecode(token);
+          if (parseInt(decoded.id) !== parseInt(localStorage.getItem('id'))) {
+            throw `ERRO: Local Storage foi alterado indevidamente. Realize novo login!`;
+          }
         }
-      })();
-    }
+      } catch (error) {
+        setAuthenticated(false);
+        console.log(error);
+        handleSignOut();
+        alert(error);
+      }
+    })();
+
     setLoading(false);
   }, []);
 
@@ -66,13 +84,19 @@ export const AuthContextProvider = ({ children }) => {
   };
   const handleSignOut = () => {
     console.log('handleSignOut: PASSOU');
-    localStorage.removeItem('token');
-    localStorage.removeItem('empreendedor');
-    localStorage.removeItem('id');
-    api.defaults.headers.common['x-access-token'] = undefined;
-    setUser(undefined);
-    // setAuthenticated(false);
-    navigate('/login');
+    if (
+      localStorage.getItem('token') &&
+      localStorage.getItem('empreendedor') &&
+      localStorage.getItem('id')
+    ) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('empreendedor');
+      localStorage.removeItem('id');
+      // api.defaults.headers.common['x-access-token'] = undefined;
+      setUser(undefined);
+    }
+    setAuthenticated(false);
+    <Navigate to='/login' replace={true} />;
   };
 
   return (

@@ -19,14 +19,23 @@ function Clientes() {
   const [aprovar, setAprovar] = useState([]);
   const [aprovado, setAprovado] = useState(false);
   const [clientes, setClientes] = useState([]);
-  const [dataClients, setDataClients] = useState(true);
+  const [dataClients, setDataClients] = useState([]);
+  const [dataClientsFiltro, setDataClientsFiltro] = useState([]);
   const [updateProduct, setUpdateProduct] = useState({});
   const navigate = useNavigate();
 
   const [openListaClientes, setOpenListaClientes] = useState(false);
+  const [openExtratoClientes, setOpenExtratoClientes] = useState(false);
 
   const handleOnCloseListaClientes = () =>
     setOpenListaClientes(!openListaClientes);
+  const handleOnCloseExtratoClientes = () =>
+    setOpenExtratoClientes(!openExtratoClientes);
+
+  const handleChangeClient = id => {
+    const result = dataClients.filter(cliente => cliente.compradorId == id);
+    setDataClientsFiltro(result);
+  };
 
   // ********************************
   //        Modais
@@ -94,6 +103,8 @@ function Clientes() {
           alert(err.response.data.error);
         });
       const arr = [];
+      // console.log(pindura.data);
+      setDataClients(pindura.data);
       pindura.data.map(obj => {
         let index = -1;
         const id = obj.compradorId;
@@ -150,6 +161,19 @@ function Clientes() {
     setLoading(false);
   }, [aprovado, openPagamento, openVender]);
 
+  useEffect(() => {
+    setLoading(true);
+    // console.log(document.getElementById('clientes'));
+    getClientes();
+    const select = document.getElementById('clientes');
+    if (select) {
+      var id = select.options[select.selectedIndex].value;
+      // console.log(`id: ${id}`);
+      handleChangeClient(id);
+    }
+    setLoading(false);
+  }, [openExtratoClientes, openPagamento, openVender]);
+
   let mainJsx = <Loading />;
 
   if (error) {
@@ -168,13 +192,18 @@ function Clientes() {
           </button>
           <button
             className='w-32 lg:w-36 border-2 text-center p-2 cursor-pointer m-3 md:m-0'
-            onClick={() => handleOnCloseListaClientes()}
+            onClick={() => {
+              handleOnCloseListaClientes();
+            }}
           >
             Lista de Clientes
           </button>
           <button
             className='w-32 lg:w-36 border-2 text-center p-2 cursor-pointer m-3 md:m-0'
-            onClick={() => console.log('extrato')}
+            onClick={() => {
+              handleChangeClient(dataClients[0].compradorId);
+              handleOnCloseExtratoClientes();
+            }}
           >
             Extrato
           </button>
@@ -266,39 +295,128 @@ function Clientes() {
                 Lista de Clientes
               </div>
               <div className='flex flex-col'>
-                <>
-                  <div className='flex flex-col'>
-                    <div className={`flex bg-[#beb56c] items-center  `}>
-                      <div className='flex-1 flex justify-between items-center py-2 px-2 lg:px-5   '>
-                        <div className='flex-1 '>Nome</div>
+                <div className='flex flex-col'>
+                  <div className={`flex bg-[#beb56c] items-center  `}>
+                    <div className='flex-1 flex justify-between items-center py-2 px-2 lg:px-5   '>
+                      <div className='flex-1 '>Nome</div>
 
-                        <div className='w-40 text-center'>Saldo</div>
-                      </div>
+                      <div className='w-40 text-center'>Saldo</div>
                     </div>
                   </div>
-                  {clientes.map((cliente, index) => {
-                    let cn;
-                    par(index) ? (cn = 'bg-[#beb56c]') : (cn = '');
-                    return (
-                      <div
-                        className={`flex ${cn} items-center  hover:font-semibold hover:text-orange-900 hover:bg-opacity-80`}
-                        key={cliente.id}
-                      >
-                        <div className='flex-1 flex justify-between items-center py-2 px-2 lg:px-5  '>
-                          <div className='flex-1 md:w-40'>{cliente.nome}</div>
-                          <div className='w-40 text-center'>
-                            {`R$ ${formatCurrency(cliente.total)}`}
-                          </div>
+                </div>
+                {clientes.map((cliente, index) => {
+                  let cn;
+                  par(index) ? (cn = 'bg-[#beb56c]') : (cn = '');
+                  return (
+                    <div
+                      className={`flex ${cn} items-center  hover:font-semibold hover:text-orange-900 hover:bg-opacity-80`}
+                      key={cliente.id}
+                    >
+                      <div className='flex-1 flex justify-between items-center py-2 px-2 lg:px-5  '>
+                        <div className='flex-1 md:w-40'>{cliente.nome}</div>
+                        <div className='w-40 text-center'>
+                          {`R$ ${formatCurrency(cliente.total)}`}
                         </div>
                       </div>
-                    );
-                  })}
-                </>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </>
         )}
         {/* Fim lista de clientes */}
+
+        {/* Extrato de Clientes */}
+        {openExtratoClientes && clientes.length !== 0 && (
+          <div className=' flex flex-col m-4'>
+            <div className=' flex flex-col m-4'>
+              <label
+                htmlFor='clientes'
+                className='px-1 font-bold text-xs cursor-pointer'
+              >
+                Escolha um cliente
+              </label>
+              <select
+                id='clientes'
+                className='w-full border-2 py-1 px-4 rounded-lg '
+                onChange={event => handleChangeClient(event.target.value)}
+              >
+                {clientes.map((cliente, index) => {
+                  return (
+                    <option value={cliente.id} key={index}>
+                      {cliente.nome}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+            <div className=' flex flex-col m-4'>
+              <div className='text-center p-4 bg-[#918639] font-bold text-lg tracking-[4px]'>
+                Extrato de Clientes
+              </div>
+              <div className='flex flex-col'>
+                <div className='flex flex-col'>
+                  <div className={`flex bg-[#beb56c] items-center  `}>
+                    <div className='flex-1 flex justify-between items-center py-2 px-2 lg:px-5   '>
+                      <div className='flex-1 '>Descrição</div>
+                      <div className='hidden md:flex md:flex-1 text-center'>
+                        Cliente
+                      </div>
+                      <div className='w-12 text-center'>Qtde.</div>
+                      <div className='w-16 text-center'>Valor</div>
+                    </div>
+                  </div>
+                </div>
+                {dataClientsFiltro.map((cliente, index) => {
+                  let cn;
+                  par(index) ? (cn = 'bg-[#beb56c]') : (cn = '');
+
+                  return (
+                    <div
+                      className={`flex ${cn} items-center  hover:font-semibold hover:text-orange-900 hover:bg-opacity-80`}
+                      key={cliente.id}
+                    >
+                      <div className='flex-1 flex justify-between items-center py-2 px-2 lg:px-5  '>
+                        <div className='flex-1 '>
+                          {cliente.produto
+                            ? cliente.produto.descricao
+                            : 'Crédito'}
+                        </div>
+                        <div className='hidden md:flex md:flex-1 text-center'>
+                          {cliente.comprador.nome}
+                        </div>
+                        <div className='w-12 text-center'>
+                          {cliente.quantidade}
+                        </div>
+                        <div className='w-16 text-center'>
+                          {formatCurrency(parseFloat(cliente.valor_total))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className='flex flex-col'>
+                  <div className={`flex bg-[#beb56c] items-center  `}>
+                    <div className='flex-1 flex justify-between items-center py-2 px-2 lg:px-5  text-lg font-bold  '>
+                      <div className='flex-1 text-center'>TOTAL</div>
+                      <div className='w-12 text-center'>R$</div>
+                      <div className='w-16 text-center '>
+                        {formatCurrency(
+                          dataClientsFiltro.reduce(
+                            (partialSum, { valor_total }) =>
+                              partialSum + parseFloat(valor_total),
+                            0
+                          )
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* MODAL PINDURAR */}
         <Vender open={openVender} setOpen={handleOnCloseVender} />

@@ -57,20 +57,23 @@ function Perfil() {
   useEffect(() => {
     async function getUsers() {
       try {
-        const { data } = await api
+        const result = await api
           .get(`/usuarios/${userID}`)
           .catch(function (err) {
-            // console.log(err.response.data.error);
-            alert(err.response.data.error);
+            console.log(err);
+            alert(err.response.data.msg);
           });
-        setDataUser(data);
-        setValue('nome', data.nome);
-        setValue('email', data.email);
-        setValue('telefone', data.telefone);
-        setValue('cpf', data.cpf);
-        setValue('empreendedor', data.empreendedor);
+        if (result.data) {
+          const data = result.data;
+          setDataUser(data);
+          setValue('nome', data.nome);
+          setValue('email', data.email);
+          setValue('telefone', data.telefone);
+          setValue('cpf', data.cpf);
+          setValue('empreendedor', data.empreendedor);
+        }
       } catch (error) {
-        // console.log(error.message);
+        console.log(error);
         setError(error.message);
       }
 

@@ -18,6 +18,7 @@ import { useAuth } from './hooks/useAuth';
 const AuthLayout = () => {
   const { authenticated, loading } = useAuth();
   // console.log(`loading AUTH: ${loading}`);
+  // console.log(`authenticated: ${authenticated}`);
 
   if (loading) {
     return <Loading />;

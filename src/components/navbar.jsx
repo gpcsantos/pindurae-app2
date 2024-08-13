@@ -11,6 +11,7 @@ const Navbar = () => {
   const isEmpreendedor = localStorage.getItem('empreendedor') === 'true';
 
   let cn;
+  // console.log(`authenticated: ${authenticated}`);
   if (authenticated) {
     cn = 'hidden md:flex flex-1 justify-evenly';
   } else {
