@@ -93,12 +93,11 @@ const Navbar = () => {
       <ul
         className={
           nav
-            ? 'fixed md:hidden left-0 top-28 w-[70%] h-full border-r border-r-gray-900 bg-[#FFE200] ease-in-out duration-500'
-            : 'ease-in-out w-[70%] duration-500 fixed top-0 bottom-0 left-[-100%]'
+            ? 'fixed z-50 md:hidden left-0 top-28 w-[70%] h-full border-r border-r-yellow-500 bg-[#FFE200] ease-in-out duration-500'
+            : 'ease-in-out z-50 w-[70%] duration-500 fixed top-0 bottom-0 left-[-100%]'
         }
       >
         {/* Mobile Logo */}
-        {/* <h1 className='w-full text-3xl font-bold text-[#00df9a] m-4'>REACT.</h1> */}
 
         {/* Mobile Navigation Items */}
         {authenticated &&

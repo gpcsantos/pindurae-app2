@@ -3,10 +3,12 @@ import { useAuth } from '../hooks/useAuth';
 function Error({ children }) {
   const { message, name, code, config, request, response } = children;
   const { handleSignOut } = useAuth();
-  // console.log('response ERROR');
+  // console.log('response ERROR: ', response);
 
-  if (response.status === 500) {
-    handleSignOut();
+  if (response) {
+    if (response.status === 500) {
+      handleSignOut();
+    }
   }
 
   return (

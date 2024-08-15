@@ -74,6 +74,9 @@ export const AuthContextProvider = ({ children }) => {
 
         api.defaults.headers.common['x-access-token'] = token;
 
+        const { data } = await api.get(`/usuarios/${decoded.id}`);
+        localStorage.setItem('nome', data.nome);
+
         navigate('/inicio');
       } else {
         alert('E-mail ou senha inválidos');
@@ -87,11 +90,13 @@ export const AuthContextProvider = ({ children }) => {
     if (
       localStorage.getItem('token') &&
       localStorage.getItem('empreendedor') &&
-      localStorage.getItem('id')
+      localStorage.getItem('id') &&
+      localStorage.getItem('nome')
     ) {
       localStorage.removeItem('token');
       localStorage.removeItem('empreendedor');
       localStorage.removeItem('id');
+      localStorage.removeItem('nome');
       // api.defaults.headers.common['x-access-token'] = undefined;
       setUser(undefined);
     }

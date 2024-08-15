@@ -289,41 +289,39 @@ function Clientes() {
 
         {/* Lista de Clientes */}
         {openListaClientes && clientes.length !== 0 && (
-          <>
-            <div className=' flex flex-col m-4'>
-              <div className='text-center p-4 bg-[#918639] font-bold text-lg tracking-[4px]'>
-                Lista de Clientes
-              </div>
+          <div className=' flex flex-col m-4'>
+            <div className='text-center p-4 bg-[#918639] font-bold text-lg tracking-[4px]'>
+              Lista de Clientes
+            </div>
+            <div className='flex flex-col'>
               <div className='flex flex-col'>
-                <div className='flex flex-col'>
-                  <div className={`flex bg-[#beb56c] items-center  `}>
-                    <div className='flex-1 flex justify-between items-center py-2 px-2 lg:px-5   '>
-                      <div className='flex-1 '>Nome</div>
+                <div className={`flex bg-[#beb56c] items-center  `}>
+                  <div className='flex-1 flex justify-between items-center py-2 px-2 lg:px-5   '>
+                    <div className='flex-1 '>Nome</div>
 
-                      <div className='w-40 text-center'>Saldo</div>
-                    </div>
+                    <div className='w-40 text-center'>Saldo</div>
                   </div>
                 </div>
-                {clientes.map((cliente, index) => {
-                  let cn;
-                  par(index) ? (cn = 'bg-[#beb56c]') : (cn = '');
-                  return (
-                    <div
-                      className={`flex ${cn} items-center  hover:font-semibold hover:text-orange-900 hover:bg-opacity-80`}
-                      key={cliente.id}
-                    >
-                      <div className='flex-1 flex justify-between items-center py-2 px-2 lg:px-5  '>
-                        <div className='flex-1 md:w-40'>{cliente.nome}</div>
-                        <div className='w-40 text-center'>
-                          {`R$ ${formatCurrency(cliente.total)}`}
-                        </div>
+              </div>
+              {clientes.map((cliente, index) => {
+                let cn;
+                par(index) ? (cn = 'bg-[#beb56c]') : (cn = '');
+                return (
+                  <div
+                    className={`flex ${cn} items-center  hover:font-semibold hover:text-orange-900 hover:bg-opacity-80`}
+                    key={cliente.id}
+                  >
+                    <div className='flex-1 flex justify-between items-center py-2 px-2 lg:px-5  '>
+                      <div className='flex-1 md:w-40'>{cliente.nome}</div>
+                      <div className='w-40 text-center'>
+                        {`R$ ${formatCurrency(cliente.total)}`}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
             </div>
-          </>
+          </div>
         )}
         {/* Fim lista de clientes */}
 
