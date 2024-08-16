@@ -5,6 +5,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
+import { CheckIcon } from '@heroicons/react/24/outline';
 
 import { api } from '../services/api';
 import { Header } from '../components/header';
@@ -25,6 +26,13 @@ const columnsVendedor = [
     width: 160,
   },
   {
+    field: 'quantidade',
+    headerName: 'Qtde',
+    align: 'right',
+    type: 'number',
+    width: 100,
+  },
+  {
     field: 'aceite_consumidor',
     headerName: 'Aceite Consumidor',
     align: 'center',
@@ -43,20 +51,14 @@ const columnsVendedor = [
     width: 160,
     valueGetter: (value, row) => `${formatDate(row.createdAt)}`,
   },
-  {
-    field: 'quantidade',
-    headerName: 'Qtde',
-    align: 'right',
-    type: 'number',
-    width: 100,
-  },
+
   {
     field: 'valor_total',
     headerName: 'Valor',
     align: 'right',
     type: 'number',
     width: 160,
-    valueGetter: (value, row) => `R$ ${formatCurrency(row.valor_total)}`,
+    valueGetter: (value, row) => `R$ ${formatCurrency(row.valor_total * -1)}`,
   },
   {
     field: 'observacao',
@@ -82,6 +84,13 @@ const columnsConsumidor = [
     width: 160,
   },
   {
+    field: 'quantidade',
+    headerName: 'Qtde',
+    align: 'right',
+    type: 'number',
+    width: 100,
+  },
+  {
     field: 'aceite_empreendedor',
     headerName: 'Aceite Vendedor',
     align: 'center',
@@ -100,13 +109,7 @@ const columnsConsumidor = [
     width: 160,
     valueGetter: (value, row) => `${formatDate(row.createdAt)}`,
   },
-  {
-    field: 'quantidade',
-    headerName: 'Qtde',
-    align: 'right',
-    type: 'number',
-    width: 100,
-  },
+
   {
     field: 'valor_total',
     headerName: 'Valor',
@@ -137,33 +140,73 @@ function Inicio() {
   const [openExtratoVendedor, setOpenExtratoVendedor] = useState(false);
   const [openNotificacaoCliente, setOpenNotificacaoCliente] = useState(false);
   const [openNotificacaoVendedor, setOpenNotificacaoVendedor] = useState(false);
-  const [openListaVendedores, setOpenListaVendedores] = useState(false);
-  const [openListaClientes, setOpenListaClientes] = useState(false);
   const [data, setData] = useState([]);
   const [extratoFiltrado, setExtratoFiltrado] = useState([]);
   const [listaClientesVendedores, setListaClientesVendedores] = useState([]);
-  const [notificoes, setNotificacoes] = useState([]);
+  const [numNotificoes, setNumNotificacoes] = useState(0);
+  const [saldoTotal, setSaldoTotal] = useState(0);
+  const [totalVendas, setTotalVendas] = useState(0);
+  const [dataNotificacoes, setDataNotificacoes] = useState([]);
   const isEmpreendedor = localStorage.getItem('empreendedor') === 'true';
   const userID = localStorage.getItem('id');
 
   function filterExtrato(id) {
     let result;
     if (!openExtratoVendedor && !openExtratoCliente) {
-      if (isEmpreendedor) {
-        result = data.filter(user => user.compradorId == id);
+      if (parseInt(id) === 0) {
+        result = data;
       } else {
-        result = data.filter(user => user.vendedorId == id);
+        if (isEmpreendedor) {
+          result = data.filter(user => user.compradorId == id);
+        } else {
+          result = data.filter(user => user.vendedorId == id);
+        }
       }
-      console.log('FILTRADO: ', result);
+      // console.log('FILTRADO: ', result);
       setExtratoFiltrado(result);
     }
   }
 
   function valorTotal(data) {
-    return data.reduce(
+    let result = data.reduce(
       (partialSum, { valor_total }) => partialSum + parseFloat(valor_total),
       0
     );
+
+    if (isEmpreendedor) {
+      if (result !== 0) {
+        result *= -1;
+      }
+    }
+    return result;
+  }
+
+  //contabilizar a quandidade de notificações o usuario tem
+  function countNotificacoes(data) {
+    // console.log(data);
+    let result;
+    if (isEmpreendedor) {
+      result = data.filter(pindura => pindura.aceite_empreendedor === false);
+    } else {
+      result = data.filter(pindura => pindura.aceite_consumidor === false);
+    }
+
+    setNumNotificacoes(result.length);
+    setDataNotificacoes(result);
+  }
+
+  // Realiza o aceito do produto (aprovação rápida)
+  async function handleAceita(pindura) {
+    // console.log(pindura);
+    try {
+      const { data } = await api.put(`/pindura`, pindura).catch(function (err) {
+        setError(err);
+      });
+      // setAprovado(false);
+      getData(isEmpreendedor);
+    } catch (error) {
+      setError(error);
+    }
   }
 
   // busca lista de fornecedores
@@ -213,15 +256,18 @@ function Inicio() {
       apiUrl = `/pindura/consumer/${userID}`;
     }
 
-    // console.log(apiUrl);
     const result = await api.get(apiUrl).catch(function (err) {
       // console.log(err.response.status);
       setError(err);
       // alert(err.response.data.error);
     });
     if (result.data) {
+      const totalVendas = result.data.filter(({ produtoId }) => produtoId >= 1);
       setData(result.data);
       getClienteFornecedor(result.data);
+      countNotificacoes(result.data);
+      setTotalVendas(totalVendas.length);
+      setSaldoTotal(valorTotal(result.data));
     }
   }
 
@@ -232,11 +278,22 @@ function Inicio() {
   }, []);
 
   const handleChangeVendedor = id => {
-    const result = data.filter(cliente => cliente.vendedorId == id);
+    let result;
+    if (parseInt(id) === 0) {
+      result = data;
+    } else {
+      result = data.filter(cliente => cliente.vendedorId == id);
+    }
+
     setExtratoFiltrado(result);
   };
   const handleChangeComprador = id => {
-    const result = data.filter(cliente => cliente.compradorId == id);
+    let result;
+    if (parseInt(id) === 0) {
+      result = data;
+    } else {
+      result = data.filter(cliente => cliente.compradorId == id);
+    }
     setExtratoFiltrado(result);
   };
 
@@ -254,17 +311,6 @@ function Inicio() {
   function handleNotificacaoVendedor() {
     setOpenNotificacaoVendedor(!openNotificacaoVendedor);
   }
-  function handleListaClientes() {
-    setOpenListaClientes(!openListaClientes);
-  }
-  function handleListaVendedores() {
-    setOpenListaVendedores(!openListaVendedores);
-  }
-
-  // console.log(`loading BAIXO: ${loading}`);
-  // console.log(`error: ${error}`);
-  // console.log(`userData: ${JSON.stringify(userData)}`);
-  // console.log(`UserID: ${user}`);
 
   let mainJsx = <Loading />;
 
@@ -286,27 +332,47 @@ function Inicio() {
                 handleNotificacaoVendedor();
               }}
             >
-              Notificações
+              Notificações ({numNotificoes})
             </button>
+
             <button
               className='w-32 lg:w-36 border-2 text-center p-2 cursor-pointer m-3 md:m-0'
               onClick={() => {
-                handleListaClientes();
-              }}
-            >
-              Lista de Clientes
-            </button>
-            <button
-              className='w-32 lg:w-36 border-2 text-center p-2 cursor-pointer m-3 md:m-0'
-              onClick={() => {
-                handleExtratoDetalhadoVendedor(data[0].compradorId);
+                handleExtratoDetalhadoVendedor(0);
               }}
             >
               Extrato Detalhado
             </button>
-            <button className='w-32 lg:w-36  border-2 text-center p-2 cursor-pointer m-3 md:m-0'>
-              XXXXXXXX
-            </button>
+            <div
+              className={`w-32 lg:w-36  border-2 flex flex-col justify-center items-center text-center p-2 m-3 md:m-0`}
+            >
+              <div className={`font-bold text-xs text-center `}>
+                Total Vendas
+              </div>
+              <div className={`font-bold text-base text-center mx-5 pt-2`}>
+                {totalVendas}
+              </div>
+            </div>
+            <div
+              className={`w-32 lg:w-36 flex flex-col justify-center items-center text-center p-2 m-3 md:m-0 ${
+                saldoTotal >= 0 ? 'bg-green-200  ' : 'bg-red-200 '
+              }}`}
+            >
+              <div
+                className={`font-bold text-xs text-center ${
+                  saldoTotal >= 0 ? ' text-green-900 ' : ' text-red-900'
+                }`}
+              >
+                {saldoTotal >= 0 ? 'Saldo a receber' : 'Saldo a Pagar'}
+              </div>
+              <div
+                className={`font-bold text-base text-center mx-5 pt-2 ${
+                  saldoTotal >= 0 ? ' text-green-900 ' : ' text-red-900'
+                }`}
+              >
+                {`R$ ${formatCurrency(saldoTotal)}`}
+              </div>
+            </div>
           </div>
         ) : (
           <div className='container flex justify-evenly flex-wrap my-4 '>
@@ -316,27 +382,47 @@ function Inicio() {
                 handleNotificacaoCliente();
               }}
             >
-              Notificações
+              Notificações ({numNotificoes})
             </button>
+
             <button
               className='w-32 lg:w-36 border-2 text-center p-2 cursor-pointer m-3 md:m-0'
               onClick={() => {
-                handleListaVendedores();
-              }}
-            >
-              Lista de Vendedores
-            </button>
-            <button
-              className='w-32 lg:w-36 border-2 text-center p-2 cursor-pointer m-3 md:m-0'
-              onClick={() => {
-                handleExtratoDetalhadoCliente(data[0].vendedorId);
+                handleExtratoDetalhadoCliente(0);
               }}
             >
               Extrato Detalhado
             </button>
-            <button className='w-32 lg:w-36  border-2 text-center p-2 cursor-pointer m-3 md:m-0'>
-              XXXXXXXX
-            </button>
+            <div
+              className={`w-32 lg:w-36  border-2 flex flex-col justify-center items-center text-center p-2 m-3 md:m-0`}
+            >
+              <div className={`font-bold text-xs text-center `}>
+                Total Compras
+              </div>
+              <div className={`font-bold text-base text-center mx-5 pt-2`}>
+                {totalVendas}
+              </div>
+            </div>
+            <div
+              className={`w-32 lg:w-36 flex flex-col justify-center items-center text-center p-2 m-3 md:m-0 ${
+                saldoTotal >= 0 ? 'bg-green-200  ' : 'bg-red-200 '
+              }}`}
+            >
+              <div
+                className={`font-bold text-xs text-center ${
+                  saldoTotal >= 0 ? ' text-green-900 ' : ' text-red-900'
+                }`}
+              >
+                {saldoTotal >= 0 ? 'Saldo a receber' : 'Saldo a Pagar'}
+              </div>
+              <div
+                className={`font-bold text-base text-center mx-5 pt-2 ${
+                  saldoTotal >= 0 ? ' text-green-900 ' : ' text-red-900'
+                }`}
+              >
+                {`R$ ${formatCurrency(saldoTotal)}`}
+              </div>
+            </div>
           </div>
         )}
 
@@ -357,6 +443,7 @@ function Inicio() {
                   className='w-full border-2 py-1 px-4 rounded-lg '
                   onChange={event => handleChangeVendedor(event.target.value)}
                 >
+                  <option value='0'>Todos</option>
                   {listaClientesVendedores.map((vendedor, index) => {
                     return (
                       <option value={vendedor.id} key={index}>
@@ -414,6 +501,7 @@ function Inicio() {
                       handleChangeComprador(event.target.value)
                     }
                   >
+                    <option value='0'>Todos</option>
                     {listaClientesVendedores.map((vendedor, index) => {
                       return (
                         <option value={vendedor.id} key={index}>
@@ -453,33 +541,87 @@ function Inicio() {
         {/* FIM EXTRATO DETALHADO VENDEDOR */}
 
         {/* LISTA NOTIFICAÇÕES CLIENTE*/}
-        {openNotificacaoCliente && (
-          <div className='container flex justify-evenly flex-wrap my-4 '>
-            Notificacao Cliente
-          </div>
-        )}
+        {(openNotificacaoCliente || openNotificacaoVendedor) &&
+          dataNotificacoes.length > 0 && (
+            <div className=' flex flex-col m-4'>
+              <div className='text-center p-4 bg-[#918639] font-bold text-lg tracking-[4px]'>
+                Aprovações
+              </div>
+              <div className='flex flex-col'>
+                <>
+                  <div className='flex flex-col'>
+                    <div className={`flex bg-[#beb56c] items-center  `}>
+                      <div className='flex-1 flex justify-between items-center py-2 px-2 lg:px-5   '>
+                        <div className='flex-1 '>Descrição</div>
+                        <div className='hidden md:flex md:flex-1 text-center'>
+                          {isEmpreendedor ? 'Devedor' : 'Credor'}
+                        </div>
+                        <div className='w-10 text-center'>Qtde.</div>
+                        <div className='w-12 text-center'>Valor</div>
+                      </div>
+                      <div className='w-18'>
+                        <div className='h-10 w-10 px-3 m-1 '></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {dataNotificacoes.map((pindura, index) => {
+                    let cn;
+                    par(index) ? (cn = 'bg-[#beb56c]') : (cn = '');
+                    return (
+                      <div
+                        className={`flex  ${cn} items-center  hover:font-semibold hover:text-orange-900 hover:bg-opacity-80`}
+                        key={index}
+                      >
+                        <div className='flex-1 flex justify-between items-center py-2 px-2 lg:px-5  '>
+                          <div className='flex-1 md:w-40'>
+                            {pindura.produto
+                              ? pindura.produto.descricao
+                              : 'Crédito'}
+                          </div>
+                          <div className='hidden md:flex md:flex-1 text-center'>
+                            {pindura.vendedor
+                              ? pindura.vendedor.nome
+                              : pindura.comprador.nome}
+                          </div>
+                          <div className='w-8 text-center'>
+                            {pindura.quantidade}
+                          </div>
+                          <div className='w-12 text-center'>
+                            {pindura.valor_total}
+                          </div>
+                        </div>
+                        <div className='w-18'>
+                          <div
+                            className='h-10 w-10 px-3 m-1 cursor-pointer flex justify-center items-center text-white font-semibold bg-orange-700 rounded-full hover:font-semibold hover:text-black hover:bg-orange-300'
+                            onClick={() => {
+                              let data;
+                              if (isEmpreendedor) {
+                                data = {
+                                  id: pindura.id,
+                                  aceite_empreendedor: 1,
+                                };
+                              } else {
+                                data = {
+                                  id: pindura.id,
+                                  aceite_consumidor: 1,
+                                };
+                              }
+                              handleAceita(data);
+                            }}
+                          >
+                            <CheckIcon className=' flex justify-center items-center text-lg' />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              </div>
+            </div>
+            // )}
+          )}
         {/* FIM NOTIFICAÇÕES CLIENTE */}
-        {/* LISTA NOTIFICAÇÕES VENDEDOR */}
-        {openNotificacaoVendedor && (
-          <div className='container flex justify-evenly flex-wrap my-4 '>
-            Notificacao Vendedor
-          </div>
-        )}
-        {/* FIM NOTIFICAÇÕES VENDEDOR */}
-        {/* LISTA DE CLIENTES */}
-        {openListaClientes && (
-          <div className='container flex justify-evenly flex-wrap my-4 '>
-            Lista Clientes
-          </div>
-        )}
-        {/* FIMDE CLIENTES */}
-        {/* LISTA DE CLIENTES */}
-        {openListaVendedores && (
-          <div className='container flex justify-evenly flex-wrap my-4 '>
-            Lista Vendedores
-          </div>
-        )}
-        {/* FIMDE CLIENTES */}
       </div>
     );
   }

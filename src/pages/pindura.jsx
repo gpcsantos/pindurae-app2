@@ -155,7 +155,7 @@ function Pindura() {
 
   useEffect(() => {
     try {
-      // getFornecedor();
+      setLoading(true);
       getAprovar();
       getExtrato();
 
