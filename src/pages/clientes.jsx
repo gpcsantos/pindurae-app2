@@ -71,6 +71,7 @@ function Clientes() {
       if (result) {
         setAprovar(result.data);
       }
+      setLoading(false);
     } catch (error) {
       // console.log(error.message);
       setError(error);
@@ -88,6 +89,7 @@ function Clientes() {
       });
 
       setAprovado(false);
+      setLoading(false);
     } catch (error) {
       // console.log(error.message);
       setError(error);
@@ -126,6 +128,7 @@ function Clientes() {
         }
       });
       setClientes(arr);
+      setLoading(false);
     } catch (error) {
       console.log(error);
       setError(error);
@@ -158,7 +161,7 @@ function Clientes() {
     getClientes();
 
     setAprovado(true);
-    setLoading(false);
+    // setLoading(false);
   }, [aprovado, openPagamento, openVender]);
 
   useEffect(() => {

@@ -1,8 +1,6 @@
-import { useAuth } from '../hooks/useAuth';
 import { useState, useEffect } from 'react';
 
 import { DataGrid } from '@mui/x-data-grid';
-import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
 import { CheckIcon } from '@heroicons/react/24/outline';
@@ -144,12 +142,13 @@ function Inicio() {
   const [extratoFiltrado, setExtratoFiltrado] = useState([]);
   const [listaClientesVendedores, setListaClientesVendedores] = useState([]);
   const [numNotificoes, setNumNotificacoes] = useState(0);
+  const [dataNotificacoes, setDataNotificacoes] = useState([]);
   const [saldoTotal, setSaldoTotal] = useState(0);
   const [totalVendas, setTotalVendas] = useState(0);
-  const [dataNotificacoes, setDataNotificacoes] = useState([]);
   const isEmpreendedor = localStorage.getItem('empreendedor') === 'true';
   const userID = localStorage.getItem('id');
 
+  // realiza o filtro usuário - todos ou um único
   function filterExtrato(id) {
     let result;
     if (!openExtratoVendedor && !openExtratoCliente) {
@@ -167,12 +166,12 @@ function Inicio() {
     }
   }
 
+  // Calcula o valor total, da lista de pindura,  de um usuário
   function valorTotal(data) {
     let result = data.reduce(
       (partialSum, { valor_total }) => partialSum + parseFloat(valor_total),
       0
     );
-
     if (isEmpreendedor) {
       if (result !== 0) {
         result *= -1;
@@ -190,12 +189,11 @@ function Inicio() {
     } else {
       result = data.filter(pindura => pindura.aceite_consumidor === false);
     }
-
     setNumNotificacoes(result.length);
     setDataNotificacoes(result);
   }
 
-  // Realiza o aceito do produto (aprovação rápida)
+  // Realiza o aceite do produto (aprovação rápida)
   async function handleAceita(pindura) {
     // console.log(pindura);
     try {
@@ -203,14 +201,15 @@ function Inicio() {
         setError(err);
       });
       // setAprovado(false);
-      getData(isEmpreendedor);
+      getData();
+      setLoading(false);
     } catch (error) {
       setError(error);
     }
   }
 
   // busca lista de fornecedores
-  async function getClienteFornecedor(data) {
+  function getClienteFornecedor(data) {
     try {
       const arr = [];
       data.map(obj => {
@@ -248,7 +247,8 @@ function Inicio() {
     }
   }
 
-  async function getData(isEmpreendedor) {
+  // requisição à API  para redenrização da página
+  async function getData() {
     let apiUrl;
     if (isEmpreendedor) {
       apiUrl = `/pindura/supplier/${userID}`;
@@ -268,13 +268,12 @@ function Inicio() {
       countNotificacoes(result.data);
       setTotalVendas(totalVendas.length);
       setSaldoTotal(valorTotal(result.data));
+      setLoading(false);
     }
   }
 
   useEffect(() => {
-    getData(isEmpreendedor);
-
-    setLoading(false);
+    getData();
   }, []);
 
   const handleChangeVendedor = id => {
@@ -284,7 +283,6 @@ function Inicio() {
     } else {
       result = data.filter(cliente => cliente.vendedorId == id);
     }
-
     setExtratoFiltrado(result);
   };
   const handleChangeComprador = id => {
